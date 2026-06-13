@@ -22,9 +22,8 @@ A full-stack educational tool that converts visual flowcharts into
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 · TypeScript · React Flow |
+| Frontend | React 18 · TypeScript · React Flow · Vite + SWC |
 | Backend | Node.js · Express · TypeScript |
-| Build | Vite (frontend) · ts-node-dev (backend) |
 | Testing | Jest (backend) · Vitest (frontend) |
 
 ---
@@ -33,30 +32,37 @@ A full-stack educational tool that converts visual flowcharts into
 
 ### Prerequisites
 
-- **Node.js** ≥ 18
-- **npm** ≥ 9
+- **Node.js** >= 18
+- **npm** >= 9
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
-cd flowchart-to-code-converter
+git clone https://github.com/luigi043/demo3-flowchart-to-code.git
+cd demo3-flowchart-to-code
 
-# Install all dependencies (root + workspaces)
+# Install backend dependencies
+cd backend
 npm install
-cd frontend && npm install && cd ..
-cd backend  && npm install && cd ..
+cd ..
+
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
 ### Running in development
 
+Open two terminals:
+
 ```bash
-# Terminal 1 – Backend (port 3001)
+# Terminal 1 - Backend (port 3001)
 cd backend
 npm run dev
 
-# Terminal 2 – Frontend (port 5173)
+# Terminal 2 - Frontend (port 5173)
 cd frontend
 npm run dev
 ```
@@ -67,19 +73,19 @@ Open **http://localhost:5173** in your browser.
 
 ## Usage
 
-1. **Add nodes** – click any button in the left sidebar.
-2. **Connect nodes** – drag from the handle on one node to another.
-3. **Edit labels** – double-click any node.
-4. **Delete nodes** – select a node, press `Delete`.
-5. **Convert** – click the **▶ Convert** button in the header.
-6. **View output** – switch tabs (Pseudocode / Python / JavaScript).
-7. **Export** – click **Copy** or **↓ Download**.
+1. **Add nodes** - click any button in the left sidebar
+2. **Connect nodes** - drag from the handle on one node to another
+3. **Edit labels** - double-click any node
+4. **Delete nodes** - select a node, press Delete key
+5. **Convert** - click the Convert button in the header
+6. **View output** - switch tabs (Pseudocode / Python / JavaScript)
+7. **Export** - click Copy or Download
 
 ---
 
 ## API Reference
 
-### `POST /api/convert`
+### POST /api/convert
 
 **Request body**
 
@@ -112,19 +118,10 @@ Open **http://localhost:5173** in your browser.
 {
   "success": true,
   "result": {
-    "pseudocode": "BEGIN\n    INPUT number\n    IF number % 2 == 0 THEN\n    ...",
-    "python":     "# ── Program Start ──\nnumber = input(\"Enter number: \")\n...",
-    "javascript": "// ── Program Start ──\nconst number = prompt(\"Enter number: \");\n..."
+    "pseudocode": "BEGIN\n    INPUT number\n...",
+    "python": "number = input(\"Enter number: \")\n...",
+    "javascript": "const number = prompt(\"Enter number: \");\n..."
   }
-}
-```
-
-**Validation error response (422)**
-
-```json
-{
-  "success": false,
-  "errors": ["Decision node \"number % 2 == 0\" must have exactly two edges labelled \"yes\" and \"no\"."]
 }
 ```
 
@@ -134,28 +131,26 @@ Open **http://localhost:5173** in your browser.
 
 ```
 User
- │
- ▼
-React Flow Editor  ──────────────────────► React State (Flowchart)
-                                                    │
+ |
+ v
+React Flow Editor  ──────────────────────> React State (Flowchart)
+                                                    |
                                             POST /api/convert
-                                                    │
-                                                    ▼
+                                                    |
+                                                    v
                                            FlowchartValidator
-                                                    │
-                                                    ▼
+                                                    |
+                                                    v
                                               IRBuilder
-                                       (graph → flat IR list)
-                                                    │
-                              ┌─────────────────────┼──────────────────────┐
-                              ▼                     ▼                      ▼
-                   PseudocodeGenerator    PythonGenerator     JavaScriptGenerator
-                              │                     │                      │
-                              └─────────────────────┴──────────────────────┘
-                                                    │
+                                       (graph -> flat IR list)
+                                                    |
+                              +---------------------+--------------------+
+                              v                     v                    v
+                   PseudocodeGenerator    PythonGenerator    JavaScriptGenerator
+                                                    |
                                            GenerationResult
-                                                    │
-                                                    ▼
+                                                    |
+                                                    v
                                           OutputPanel (frontend)
 ```
 
@@ -164,12 +159,7 @@ React Flow Editor  ────────────────────�
 ## Running Tests
 
 ```bash
-# Backend
 cd backend
-npm test
-
-# Frontend
-cd frontend
 npm test
 ```
 
@@ -179,50 +169,44 @@ npm test
 
 ```
 flowchart-to-code-converter/
-├── package.json                    # Root workspace config
+├── backend/
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── models/types.ts
+│   │   ├── routes/convert.ts
+│   │   ├── services/
+│   │   │   ├── conversionService.ts
+│   │   │   └── irBuilder.ts
+│   │   ├── validators/flowchartValidator.ts
+│   │   └── generators/
+│   │       ├── pseudocode/
+│   │       ├── python/
+│   │       └── javascript/
+│   └── tests/pipeline.test.ts
 │
 ├── frontend/
 │   ├── index.html
 │   ├── vite.config.ts
-│   ├── tsconfig.json
 │   └── src/
-│       ├── main.tsx                # React entry point
-│       ├── App.tsx                 # Root layout
-│       ├── types/index.ts          # Shared types
-│       ├── services/api.ts         # HTTP layer
-│       ├── hooks/useConverter.ts   # Conversion state hook
-│       └── components/
-│           ├── FlowEditor/         # React Flow canvas
-│           ├── NodePanel/          # Node palette sidebar
-│           ├── OutputPanel/        # Error / output container
-│           └── LanguageTabs/       # Pseudocode / Python / JS tabs
-│
-├── backend/
-│   ├── tsconfig.json
-│   └── src/
-│       ├── index.ts                # Express entry point
-│       ├── models/types.ts         # Domain types & API contracts
-│       ├── routes/convert.ts       # POST /api/convert handler
+│       ├── App.tsx
+│       ├── main.tsx
+│       ├── types/
 │       ├── services/
-│       │   ├── conversionService.ts  # Pipeline orchestrator
-│       │   └── irBuilder.ts          # Flowchart → IR
-│       ├── validators/
-│       │   └── flowchartValidator.ts
-│       └── generators/
-│           ├── pseudocode/pseudocodeGenerator.ts
-│           ├── python/pythonGenerator.ts
-│           └── javascript/javascriptGenerator.ts
+│       ├── hooks/
+│       └── components/
+│           ├── FlowEditor/
+│           ├── NodePanel/
+│           ├── OutputPanel/
+│           └── LanguageTabs/
 │
-├── examples/
-│   └── even-odd.json              # Sample flowchart for curl testing
-│
-└── docs/
-    └── ARCHITECTURE.md
+├── docs/ARCHITECTURE.md
+├── examples/even-odd.json
+└── README.md
 ```
 
 ---
 
-## Extending — Adding a New Language
+## Extending - Adding a New Language
 
 1. Create `backend/src/generators/<lang>/<lang>Generator.ts`
 2. Implement `generate<Lang>(ir: IR): string`
@@ -235,10 +219,9 @@ flowchart-to-code-converter/
 
 - Loop support (while / for nodes in IR)
 - AI-assisted flowchart generation from plain text
-- Reverse conversion: paste code → generate flowchart
+- Reverse conversion: paste code, get flowchart
 - Java, C#, Kotlin generators
 - PDF export of full flowchart + code report
-- User accounts & saved flowcharts
 
 ---
 
