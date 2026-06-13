@@ -1,0 +1,20 @@
+{
+  "flowchart": {
+    "nodes": [
+      { "id": "1", "type": "start",    "label": "Start" },
+      { "id": "2", "type": "input",    "label": "number" },
+      { "id": "3", "type": "decision", "label": "number % 2 == 0" },
+      { "id": "4", "type": "output",   "label": "\"Even\"" },
+      { "id": "5", "type": "output",   "label": "\"Odd\"" },
+      { "id": "6", "type": "end",      "label": "End" }
+    ],
+    "edges": [
+      { "id": "e1", "source": "1", "target": "2" },
+      { "id": "e2", "source": "2", "target": "3" },
+      { "id": "e3", "source": "3", "target": "4", "label": "yes" },
+      { "id": "e4", "source": "3", "target": "5", "label": "no"  },
+      { "id": "e5", "source": "4", "target": "6" },
+      { "id": "e6", "source": "5", "target": "6" }
+    ]
+  }
+}
