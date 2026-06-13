@@ -2,7 +2,7 @@
 
 A full-stack educational tool that converts visual flowcharts into
 **Pseudocode**, **Python**, and **JavaScript** simultaneously.
-
+![alt text](docs/image.png)
 ---
 
 ## Features
