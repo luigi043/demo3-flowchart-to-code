@@ -47,7 +47,8 @@ export class IRBuilder {
 
   // ── Recursive DFS visitor ─────────────────────────────────────────────────
 
-  private visit(nodeId: string): void {
+  private visit(nodeId: string, stopAt?: string): void {
+    if (nodeId === stopAt) return;
     if (this.visited.has(nodeId)) return;
 
     const node = this.nodes.get(nodeId);
@@ -57,7 +58,7 @@ export class IRBuilder {
       case "start":
         this.emit("START", undefined);
         this.visited.add(nodeId);
-        this.advance(nodeId);
+        this.advance(nodeId, stopAt);
         break;
 
       case "end":
@@ -68,30 +69,30 @@ export class IRBuilder {
       case "process":
         this.emit("PROCESS", node.label);
         this.visited.add(nodeId);
-        this.advance(nodeId);
+        this.advance(nodeId, stopAt);
         break;
 
       case "input":
         this.emit("INPUT", node.label);
         this.visited.add(nodeId);
-        this.advance(nodeId);
+        this.advance(nodeId, stopAt);
         break;
 
       case "output":
         this.emit("OUTPUT", node.label);
         this.visited.add(nodeId);
-        this.advance(nodeId);
+        this.advance(nodeId, stopAt);
         break;
 
       case "decision":
-        this.handleDecision(node);
+        this.handleDecision(node, stopAt);
         break;
     }
   }
 
   // ── Decision (if/else) handler ────────────────────────────────────────────
 
-  private handleDecision(node: FlowNode): void {
+  private handleDecision(node: FlowNode, stopAt?: string): void {
     this.visited.add(node.id);
     this.emit("IF", node.label);
     this.depth++;
@@ -99,30 +100,30 @@ export class IRBuilder {
     const outs  = this.outgoing.get(node.id) ?? [];
     const yesEdge = outs.find((e) => e.label?.toLowerCase() === "yes");
     const noEdge  = outs.find((e) => e.label?.toLowerCase() === "no");
+    const mergeId = this.findMerge(yesEdge?.target, noEdge?.target);
 
     // YES branch
-    if (yesEdge) this.visit(yesEdge.target);
+    if (yesEdge) this.visit(yesEdge.target, mergeId);
 
     this.depth--;
     this.emit("ELSE", undefined);
     this.depth++;
 
     // NO branch
-    if (noEdge) this.visit(noEdge.target);
+    if (noEdge) this.visit(noEdge.target, mergeId);
 
     this.depth--;
     this.emit("END_IF", undefined);
 
     // Find the merge point (first node both branches reach) and continue
-    const mergeId = this.findMerge(yesEdge?.target, noEdge?.target);
-    if (mergeId) this.visit(mergeId);
+    if (mergeId && mergeId !== stopAt) this.visit(mergeId, stopAt);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private advance(nodeId: string): void {
+  private advance(nodeId: string, stopAt?: string): void {
     const outs = this.outgoing.get(nodeId) ?? [];
-    if (outs.length > 0) this.visit(outs[0].target);
+    if (outs.length > 0) this.visit(outs[0].target, stopAt);
   }
 
   private emit(type: IRStatement["type"], value: string | undefined): void {

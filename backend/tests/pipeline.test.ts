@@ -3,7 +3,7 @@
  *   validator → IRBuilder → generators
  */
 
-import { validateFlowchart } from "../src/validators/flowchartValidator";
+import { validateFlowchart, validateFlowchartPayload } from "../src/validators/flowchartValidator";
 import { IRBuilder } from "../src/services/irBuilder";
 import { generatePseudocode } from "../src/generators/pseudocode/pseudocodeGenerator";
 import { generatePython } from "../src/generators/python/pythonGenerator";
@@ -81,6 +81,30 @@ describe("validateFlowchart", () => {
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes("yes") || e.includes("no"))).toBe(true);
   });
+
+  test("rejects cycles that the generators cannot represent", () => {
+    const flowchart: Flowchart = {
+      nodes: [
+        { id: "1", type: "start", label: "Start" },
+        { id: "2", type: "process", label: "x = x + 1" },
+        { id: "3", type: "end", label: "End" },
+      ],
+      edges: [
+        { id: "e1", source: "1", target: "2" },
+        { id: "e2", source: "2", target: "2" },
+      ],
+    };
+
+    const result = validateFlowchart(flowchart);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Loops are not supported yet; the flowchart must be acyclic.");
+  });
+
+  test("rejects malformed API payloads without throwing", () => {
+    const result = validateFlowchartPayload({ nodes: "invalid", edges: [] });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Flowchart nodes must be an array.");
+  });
 });
 
 // ── IR Builder tests ───────────────────────────────────────────────────────────
@@ -95,9 +119,16 @@ describe("IRBuilder", () => {
   test("builds IF/ELSE/END_IF for decision node", () => {
     const ir = new IRBuilder(evenOddFlowchart).build();
     const types = ir.map((s) => s.type);
-    expect(types).toContain("IF");
-    expect(types).toContain("ELSE");
-    expect(types).toContain("END_IF");
+    expect(types).toEqual([
+      "START",
+      "INPUT",
+      "IF",
+      "OUTPUT",
+      "ELSE",
+      "OUTPUT",
+      "END_IF",
+      "END",
+    ]);
   });
 });
 

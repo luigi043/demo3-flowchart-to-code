@@ -13,6 +13,59 @@
 
 import { Flowchart, ValidationResult } from "../models/types";
 
+const NODE_TYPES = new Set(["start", "end", "process", "input", "output", "decision"]);
+
+export function validateFlowchartPayload(value: unknown): ValidationResult {
+  const errors: string[] = [];
+
+  if (!value || typeof value !== "object") {
+    return { valid: false, errors: ["Flowchart must be an object."] };
+  }
+
+  const candidate = value as Record<string, unknown>;
+  if (!Array.isArray(candidate.nodes)) errors.push("Flowchart nodes must be an array.");
+  if (!Array.isArray(candidate.edges)) errors.push("Flowchart edges must be an array.");
+  if (errors.length > 0) return { valid: false, errors };
+
+  const nodes = candidate.nodes as unknown[];
+  const edges = candidate.edges as unknown[];
+
+  nodes.forEach((node, index) => {
+    if (!node || typeof node !== "object") {
+      errors.push(`Node at index ${index} must be an object.`);
+      return;
+    }
+    const item = node as Record<string, unknown>;
+    if (typeof item.id !== "string" || item.id.trim() === "") {
+      errors.push(`Node at index ${index} must have a non-empty string id.`);
+    }
+    if (typeof item.type !== "string" || !NODE_TYPES.has(item.type)) {
+      errors.push(`Node at index ${index} has an unsupported type.`);
+    }
+    if (typeof item.label !== "string" || item.label.trim() === "") {
+      errors.push(`Node at index ${index} must have a non-empty label.`);
+    }
+  });
+
+  edges.forEach((edge, index) => {
+    if (!edge || typeof edge !== "object") {
+      errors.push(`Edge at index ${index} must be an object.`);
+      return;
+    }
+    const item = edge as Record<string, unknown>;
+    for (const key of ["id", "source", "target"] as const) {
+      if (typeof item[key] !== "string" || item[key].trim() === "") {
+        errors.push(`Edge at index ${index} must have a non-empty string ${key}.`);
+      }
+    }
+    if (item.label !== undefined && typeof item.label !== "string") {
+      errors.push(`Edge at index ${index} label must be a string when provided.`);
+    }
+  });
+
+  return { valid: errors.length === 0, errors };
+}
+
 export function validateFlowchart(flowchart: Flowchart): ValidationResult {
   const errors: string[] = [];
   const { nodes, edges } = flowchart;
@@ -29,6 +82,20 @@ export function validateFlowchart(flowchart: Flowchart): ValidationResult {
   if (startNodes.length > 1)   errors.push("Only one START node is allowed.");
   if (endNodes.length === 0)   errors.push("Missing END node.");
   if (endNodes.length > 1)     errors.push("Only one END node is allowed.");
+
+  const nodeIds = new Set<string>();
+  for (const node of nodes) {
+    if (nodeIds.has(node.id)) errors.push(`Duplicate node id "${node.id}".`);
+    nodeIds.add(node.id);
+  }
+
+  const edgeIds = new Set<string>();
+  for (const edge of edges) {
+    if (edgeIds.has(edge.id)) errors.push(`Duplicate edge id "${edge.id}".`);
+    edgeIds.add(edge.id);
+    if (!nodeIds.has(edge.source)) errors.push(`Edge "${edge.id}" has an unknown source.`);
+    if (!nodeIds.has(edge.target)) errors.push(`Edge "${edge.id}" has an unknown target.`);
+  }
 
   // ── Build adjacency helpers ───────────────────────────────────────────────
   const outgoing = new Map<string, typeof edges>(); // nodeId → edges leaving it
@@ -51,6 +118,19 @@ export function validateFlowchart(flowchart: Flowchart): ValidationResult {
     }
     if (node.type !== "start" && (incoming.get(node.id)?.length ?? 0) === 0) {
       errors.push(`Node "${node.label}" (${node.id}) has no incoming edges.`);
+    }
+    if (node.type === "start" && (incoming.get(node.id)?.length ?? 0) > 0) {
+      errors.push("START node cannot have incoming edges.");
+    }
+    if (node.type === "end" && (outgoing.get(node.id)?.length ?? 0) > 0) {
+      errors.push("END node cannot have outgoing edges.");
+    }
+    if (
+      node.type !== "decision" &&
+      node.type !== "end" &&
+      (outgoing.get(node.id)?.length ?? 0) > 1
+    ) {
+      errors.push(`Node "${node.label}" must have exactly one outgoing edge.`);
     }
   }
 
@@ -85,6 +165,24 @@ export function validateFlowchart(flowchart: Flowchart): ValidationResult {
         );
       }
     }
+  }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const hasCycle = (nodeId: string): boolean => {
+    if (visiting.has(nodeId)) return true;
+    if (visited.has(nodeId)) return false;
+    visiting.add(nodeId);
+    for (const edge of outgoing.get(nodeId) ?? []) {
+      if (hasCycle(edge.target)) return true;
+    }
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    return false;
+  };
+
+  if (startNodes.length === 1 && hasCycle(startNodes[0].id)) {
+    errors.push("Loops are not supported yet; the flowchart must be acyclic.");
   }
 
   return { valid: errors.length === 0, errors };

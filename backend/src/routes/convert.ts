@@ -8,6 +8,7 @@
 import { Router, Request, Response } from "express";
 import { ConvertRequest, ConvertResponse } from "../models/types";
 import { convertFlowchart } from "../services/conversionService";
+import { validateFlowchartPayload } from "../validators/flowchartValidator";
 
 const router = Router();
 
@@ -20,6 +21,14 @@ router.post("/convert", (req: Request, res: Response) => {
       errors: ['Request body must contain a "flowchart" key.'],
     };
     return res.status(400).json(resp);
+  }
+
+  const payloadValidation = validateFlowchartPayload(body.flowchart);
+  if (!payloadValidation.valid) {
+    return res.status(400).json({
+      success: false,
+      errors: payloadValidation.errors,
+    } satisfies ConvertResponse);
   }
 
   const output = convertFlowchart(body.flowchart);
