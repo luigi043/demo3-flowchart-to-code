@@ -6,7 +6,10 @@
 Flowchart (JSON)
       │
       ▼
-FlowchartValidator          ← structural checks (start/end count, decision branches, reachability)
+PayloadValidator            ← runtime JSON shape and supported node types
+      │
+      ▼
+FlowchartValidator          ← graph invariants, references, branches, reachability, cycles
       │
       ▼ (valid)
 IRBuilder                   ← DFS traversal → flat ordered list of IRStatement objects
@@ -43,6 +46,10 @@ This design means:
 | Incoming edges | Every non-START node must have ≥ 1 incoming edge |
 | Decision branches | Decision nodes must have exactly 2 edges: `yes` and `no` |
 | Reachability | BFS from START must reach every node |
+| Unique IDs | Node and edge identifiers cannot be duplicated |
+| Edge references | Every edge source and target must name an existing node |
+| Linear nodes | Non-decision nodes have at most one outgoing edge |
+| Acyclic graph | Loops are rejected until loop statements exist in the IR |
 
 ## Decision node handling
 
@@ -55,10 +62,14 @@ Decision node
                                          continues
 ```
 
-The IRBuilder uses a naive merge-point finder (first node reachable from
-both branches that has not yet been visited).  This works correctly for
-simple single-level if/else.  Nested decisions require a more sophisticated
-post-dominator analysis (planned for v2).
+The IRBuilder determines the first shared reachable node before traversing
+either branch. Each branch stops at that merge, `END_IF` is emitted, and only
+then does traversal continue from the shared node. This prevents a shared END
+node from being incorrectly emitted inside one branch.
+
+This merge strategy is intentionally scoped to simple acyclic `if/else` flows.
+General nested or irreducible control flow requires post-dominator analysis and
+is not part of the current contract.
 
 ## Adding a language generator
 
