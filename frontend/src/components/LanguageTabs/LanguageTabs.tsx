@@ -1,118 +1,66 @@
-/**
- * LanguageTabs
- *
- * Tabbed panel that displays the three generated outputs:
- * Pseudocode | Python | JavaScript
- */
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { GenerationResult } from "../../types";
 
-interface LanguageTabsProps {
-  result: GenerationResult;
-}
+type Tab = keyof GenerationResult;
 
-type Tab = "pseudocode" | "python" | "javascript";
-
-const TABS: { id: Tab; label: string; accent: string }[] = [
-  { id: "pseudocode",  label: "Pseudocode",  accent: "#cdd6f4" },
-  { id: "python",      label: "Python",      accent: "#3b82f6" },
-  { id: "javascript",  label: "JavaScript",  accent: "#eab308" },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "pseudocode", label: "Pseudocode" },
+  { id: "python", label: "Python" },
+  { id: "javascript", label: "JavaScript" },
 ];
 
-export const LanguageTabs: React.FC<LanguageTabsProps> = ({ result }) => {
+export function LanguageTabs({ result }: { result: GenerationResult }) {
   const [active, setActive] = useState<Tab>("pseudocode");
-  const [copied, setCopied] = useState(false);
-
+  const [copyStatus, setCopyStatus] = useState("Copy");
   const code = result[active];
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopyStatus("Copied");
+    } catch {
+      setCopyStatus("Copy failed");
+    }
+    window.setTimeout(() => setCopyStatus("Copy"), 1500);
   };
 
   const handleDownload = () => {
-    const ext = active === "python" ? "py" : active === "javascript" ? "js" : "txt";
-    const blob = new Blob([code], { type: "text/plain" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `output.${ext}`;
-    a.click();
+    const extension = active === "python" ? "py" : active === "javascript" ? "js" : "txt";
+    const url = URL.createObjectURL(new Blob([code], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `flowchart.${extension}`;
+    link.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Tab bar */}
-      <div
-        style={{
-          display: "flex",
-          borderBottom: "1px solid #313244",
-          background: "#181825",
-        }}
-      >
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActive(tab.id)}
-            style={{
-              padding: "10px 20px",
-              background: "transparent",
-              border: "none",
-              borderBottom: active === tab.id ? `2px solid ${tab.accent}` : "2px solid transparent",
-              color: active === tab.id ? tab.accent : "#6c7086",
-              fontSize: 13,
-              fontWeight: active === tab.id ? 700 : 400,
-              cursor: "pointer",
-              transition: "color 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-
-        {/* Action buttons */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, paddingRight: 12 }}>
-          <button onClick={handleCopy} style={actionBtnStyle}>
-            {copied ? "✓ Copied" : "Copy"}
-          </button>
-          <button onClick={handleDownload} style={actionBtnStyle}>
-            ↓ Download
-          </button>
+    <div className="code-viewer">
+      <div className="tab-toolbar">
+        <div className="tabs" role="tablist" aria-label="Generated languages">
+          {TABS.map((tab) => (
+            <button
+              id={`tab-${tab.id}`}
+              key={tab.id}
+              className={active === tab.id ? "active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={active === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              onClick={() => setActive(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="code-actions">
+          <button type="button" onClick={() => void handleCopy()}>{copyStatus}</button>
+          <button type="button" onClick={handleDownload}>Download</button>
         </div>
       </div>
-
-      {/* Code area */}
-      <pre
-        style={{
-          flex: 1,
-          margin: 0,
-          padding: "16px 20px",
-          background: "#1e1e2e",
-          color: "#cdd6f4",
-          fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-          fontSize: 13,
-          lineHeight: 1.7,
-          overflowY: "auto",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
-        {code}
+      <pre id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
+        <code>{code}</code>
       </pre>
     </div>
   );
-};
-
-const actionBtnStyle: React.CSSProperties = {
-  background: "#313244",
-  border: "1px solid #45475a",
-  borderRadius: 5,
-  color: "#cdd6f4",
-  fontSize: 12,
-  padding: "4px 10px",
-  cursor: "pointer",
-};
+}

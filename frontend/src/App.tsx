@@ -1,122 +1,63 @@
-/**
- * App.tsx – root component
- *
- * Layout:
- *   ┌─────────────────────────────────────────────────────┐
- *   │  Header (title + Convert button)                    │
- *   ├──────────┬──────────────────────┬───────────────────┤
- *   │ NodePanel│   FlowEditor canvas  │   OutputPanel     │
- *   └──────────┴──────────────────────┴───────────────────┘
- */
-
-import React, { useCallback, useRef, useState } from "react";
-import { NodePanel } from "./components/NodePanel/NodePanel";
+import { useCallback, useRef, useState } from "react";
 import { FlowEditor } from "./components/FlowEditor/FlowEditor";
+import { NodePanel } from "./components/NodePanel/NodePanel";
 import { OutputPanel } from "./components/OutputPanel/OutputPanel";
 import { useConverter } from "./hooks/useConverter";
 import { Flowchart, NodeType } from "./types";
+import "./styles.css";
 
 export default function App() {
   const { result, errors, loading, convert } = useConverter();
   const [flowchart, setFlowchart] = useState<Flowchart>({ nodes: [], edges: [] });
-
-  // addNode function registered by FlowEditor, called by NodePanel
   const addNodeRef = useRef<((type: NodeType) => void) | null>(null);
 
-  const handleAddNode = useCallback((adder: (type: NodeType) => void) => {
+  const registerAddNode = useCallback((adder: (type: NodeType) => void) => {
     addNodeRef.current = adder;
   }, []);
 
   const handleConvert = () => {
-    if (flowchart.nodes.length === 0) return;
-    convert(flowchart);
+    if (flowchart.nodes.length > 0) void convert(flowchart);
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        background: "#11111b",
-        fontFamily: "'Inter', 'Segoe UI', sans-serif",
-        color: "#cdd6f4",
-      }}
-    >
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "10px 24px",
-          background: "#181825",
-          borderBottom: "1px solid #313244",
-          flexShrink: 0,
-        }}
-      >
-        <div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#89b4fa" }}>
-            ◈ Flowchart
-          </span>
-          <span style={{ fontSize: 18, fontWeight: 400, color: "#cdd6f4" }}>
-            {" "}to Code
-          </span>
-          <span
-            style={{
-              marginLeft: 10,
-              fontSize: 11,
-              background: "#313244",
-              padding: "2px 8px",
-              borderRadius: 20,
-              color: "#6c7086",
-              verticalAlign: "middle",
-            }}
-          >
-            v1.0.0
-          </span>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="brand-block">
+          <div className="brand-mark" aria-hidden="true">F</div>
+          <div>
+            <p className="eyebrow">Visual programming workspace</p>
+            <h1>Flowchart <span>to Code</span></h1>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 12, color: "#6c7086" }}>
-            Double-click node to edit · Delete key to remove
-          </span>
+        <div className="header-actions">
+          <p className="keyboard-hint">Double-click to edit. Select and press Delete to remove.</p>
           <button
+            className="convert-button"
+            type="button"
             onClick={handleConvert}
-            disabled={loading}
-            style={{
-              background: loading ? "#313244" : "#89b4fa",
-              color: loading ? "#6c7086" : "#11111b",
-              border: "none",
-              borderRadius: 8,
-              padding: "8px 22px",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "background 0.15s",
-            }}
+            disabled={loading || flowchart.nodes.length === 0}
           >
-            {loading ? "Converting…" : "▶ Convert"}
+            <span aria-hidden="true">{loading ? "↻" : "▶"}</span>
+            {loading ? "Generating" : "Generate code"}
           </button>
         </div>
       </header>
 
-      {/* ── Main area ───────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Sidebar */}
+      <main className="workspace">
         <NodePanel onAddNode={(type) => addNodeRef.current?.(type)} />
-
-        {/* Canvas */}
-        <FlowEditor
-          onAddNode={handleAddNode}
-          onFlowchartChange={setFlowchart}
-        />
-
-        {/* Output */}
-        <div style={{ width: 480, flexShrink: 0 }}>
-          <OutputPanel result={result} errors={errors} loading={loading} />
-        </div>
-      </div>
+        <section className="canvas-panel" aria-label="Flowchart editor">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Canvas</p>
+              <h2>Even or odd</h2>
+            </div>
+            <span className="status-pill">{flowchart.nodes.length} nodes</span>
+          </div>
+          <FlowEditor onAddNode={registerAddNode} onFlowchartChange={setFlowchart} />
+        </section>
+        <OutputPanel result={result} errors={errors} loading={loading} />
+      </main>
     </div>
   );
 }

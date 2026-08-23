@@ -15,9 +15,12 @@ export async function convertFlowchart(
     body: JSON.stringify({ flowchart }),
   });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error ${response.status}`);
-  }
+  const payload = await response.json().catch(() => null) as ConvertResponse | null;
+  if (payload && typeof payload.success === "boolean") return payload;
 
-  return response.json() as Promise<ConvertResponse>;
+  throw new Error(
+    response.ok
+      ? "The server returned an invalid response."
+      : `The conversion service is unavailable (HTTP ${response.status}).`
+  );
 }

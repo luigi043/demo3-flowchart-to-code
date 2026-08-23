@@ -4,14 +4,12 @@
  * Main drag-and-drop flowchart canvas powered by React Flow.
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   addEdge,
-  useNodesState,
-  useEdgesState,
   Connection,
   Edge,
   Node,
@@ -20,6 +18,7 @@ import ReactFlow, {
   EdgeChange,
   applyNodeChanges,
   applyEdgeChanges,
+  ReactFlowInstance,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -46,7 +45,7 @@ const INITIAL_NODES: Node[] = [
     id: "2",
     type: "default",
     position: { x: 160, y: 160 },
-    data: { label: "INPUT number", nodeType: "input" },
+    data: { label: "number", nodeType: "input" },
     style: { background: NODE_COLORS.input, color: "#fff", border: "none", borderRadius: 6 },
   },
   {
@@ -60,14 +59,14 @@ const INITIAL_NODES: Node[] = [
     id: "4",
     type: "default",
     position: { x: 20, y: 400 },
-    data: { label: 'OUTPUT "Even"', nodeType: "output" },
+    data: { label: '"Even"', nodeType: "output" },
     style: { background: NODE_COLORS.output, color: "#fff", border: "none", borderRadius: 6 },
   },
   {
     id: "5",
     type: "default",
     position: { x: 280, y: 400 },
-    data: { label: 'OUTPUT "Odd"', nodeType: "output" },
+    data: { label: '"Odd"', nodeType: "output" },
     style: { background: NODE_COLORS.output, color: "#fff", border: "none", borderRadius: 6 },
   },
   {
@@ -102,6 +101,8 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
   const [nodes, setNodes] = useState<Node[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const flowInstanceRef = useRef<ReactFlowInstance | null>(null);
 
   const toFlowchart = useCallback((ns: Node[], es: Edge[]): Flowchart => ({
     nodes: ns.map((n) => ({
@@ -120,12 +121,19 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
 
   const addNode = useCallback((type: NodeType) => {
     const id    = String(++nodeIdCounter);
-    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    const defaultLabels: Record<NodeType, string> = {
+      start: "Start",
+      end: "End",
+      process: "result = value * 2",
+      input: "value",
+      output: '"Result"',
+      decision: "value > 0",
+    };
     const newNode: Node = {
       id,
       type: "default",
       position: { x: 180 + Math.random() * 80, y: 180 + Math.random() * 80 },
-      data: { label, nodeType: type },
+      data: { label: defaultLabels[type], nodeType: type },
       style: {
         background: NODE_COLORS[type],
         color: type === "decision" ? "#000" : "#fff",
@@ -143,10 +151,22 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
     });
   }, [edges, onFlowchartChange, toFlowchart]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     onAddNode(addNode);
     onFlowchartChange(toFlowchart(nodes, edges));
-  }, [addNode]);
+  }, [addNode, edges, nodes, onAddNode, onFlowchartChange, toFlowchart]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      window.requestAnimationFrame(() => {
+        void flowInstanceRef.current?.fitView({ padding: 0.18, duration: 200 });
+      });
+    });
+    observer.observe(editorRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => {
@@ -187,16 +207,22 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
       setNodes((nds) => {
-        const updated = nds.filter((n) => n.id !== selectedId);
-        onFlowchartChange(toFlowchart(updated, edges));
-        return updated;
+        const updatedNodes = nds.filter((n) => n.id !== selectedId);
+        setEdges((currentEdges) => {
+          const updatedEdges = currentEdges.filter(
+            (edge) => edge.source !== selectedId && edge.target !== selectedId
+          );
+          onFlowchartChange(toFlowchart(updatedNodes, updatedEdges));
+          return updatedEdges;
+        });
+        return updatedNodes;
       });
       setSelectedId(null);
     }
-  }, [selectedId, edges, onFlowchartChange, toFlowchart]);
+  }, [selectedId, onFlowchartChange, toFlowchart]);
 
   return (
-    <div style={{ flex: 1, height: "100%" }} onKeyDown={onKeyDown} tabIndex={0}>
+    <div ref={editorRef} className="flow-editor" onKeyDown={onKeyDown} tabIndex={0}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -205,6 +231,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
         onConnect={onConnect}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeClick={(_, node) => setSelectedId(node.id)}
+        onPaneClick={() => setSelectedId(null)}
+        onInit={(instance) => {
+          flowInstanceRef.current = instance;
+          window.requestAnimationFrame(() => void instance.fitView({ padding: 0.18 }));
+        }}
+        aria-label="Interactive flowchart canvas"
         fitView
       >
         <Background variant={BackgroundVariant.Dots} color="#313244" gap={20} />
