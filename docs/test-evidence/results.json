@@ -1,0 +1,26 @@
+[
+  {
+    "id": "backend-build",
+    "title": "Backend TypeScript build",
+    "command": "npm.cmd run build --prefix backend",
+    "exitCode": 0
+  },
+  {
+    "id": "backend-tests",
+    "title": "Backend pipeline and generated program tests",
+    "command": "npm.cmd test --prefix backend -- --runInBand --verbose",
+    "exitCode": 0
+  },
+  {
+    "id": "frontend-tests",
+    "title": "Frontend API error handling tests",
+    "command": "npm.cmd test --prefix frontend -- --run --reporter=verbose",
+    "exitCode": 0
+  },
+  {
+    "id": "frontend-build",
+    "title": "Frontend production build",
+    "command": "npm.cmd run build --prefix frontend",
+    "exitCode": 0
+  }
+]

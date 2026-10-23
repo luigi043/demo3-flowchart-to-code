@@ -1,0 +1,17 @@
+$ npm.cmd run build --prefix frontend
+Exit code: 0
+
+
+> flowchart-frontend@1.0.0 build
+> tsc && vite build
+
+vite v5.2.10 building for production...
+transforming...
+✓ 203 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.64 kB │ gzip:  0.39 kB
+dist/assets/index-DI6oCUg0.css    7.26 kB │ gzip:  1.58 kB
+dist/assets/index-BwJixQKw.js   301.80 kB │ gzip: 97.97 kB
+✓ built in 10.18s
+The CJS build of Vite's Node API is deprecated. See https://vitejs.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.

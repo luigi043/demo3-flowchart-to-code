@@ -1,0 +1,18 @@
+PASS Starter flowchart and matching pseudocode
+PASS Python tab displays numeric input and both branches
+FAIL AssertionError [ERR_ASSERTION]: '// ── Program Start ──────────────────────────────────\r\n' +
+  'let number = Number(prompt("Enter number: "));\r\n' +
+  'if (number % 2 == 0) {\r\n' +
+  '  console.log("Even");\r\n' +
+  '} else {\r\n' +
+  '  console.log("Odd");\r\n' +
+  '}\r\n' +
+  '// ── Program End ────────────────────────────────────' == '// ── Program Start ──────────────────────────────────\n' +
+  'let number = Number(prompt("Enter number: "));\n' +
+  'if (number % 2 == 0) {\n' +
+  '  console.log("Even");\n' +
+  '} else {\n' +
+  '  console.log("Odd");\n' +
+  '}\n' +
+  '// ── Program End ────────────────────────────────────'
+    at C:\Users\cluiz\OneDrive - Instituto Politecnico de Beja\Documents\2026\Demo Project Ideas — Introduction to Software Engineering\demo3-flowchart-to-code\docs\browser-smoke.cjs:52:12

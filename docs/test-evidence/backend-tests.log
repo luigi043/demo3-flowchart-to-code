@@ -1,0 +1,37 @@
+$ npm.cmd test --prefix backend -- --runInBand --verbose
+Exit code: 0
+
+
+> flowchart-backend@1.0.0 test
+> jest --runInBand --verbose
+
+PASS tests/pipeline.test.ts
+  validateFlowchart
+    √ passes a valid even/odd flowchart (10 ms)
+    √ fails when no START node (1 ms)
+    √ fails when decision node lacks yes/no edges (2 ms)
+  IRBuilder
+    √ builds correct IR for linear flowchart (2 ms)
+    √ builds IF/ELSE/END_IF for decision node (3 ms)
+  generatePseudocode
+    √ contains BEGIN and END (1 ms)
+  generatePython
+    √ contains print() for OUTPUT nodes (1 ms)
+    √ contains input() for INPUT nodes (1 ms)
+  generateJavaScript
+    √ contains console.log() for OUTPUT nodes (2 ms)
+    √ contains closing brace for END_IF (1 ms)
+
+PASS tests/behavior.test.ts
+  √ generated JavaScript executes for -4 (10 ms)
+  √ generated JavaScript executes for 0 (4 ms)
+  √ generated JavaScript executes for 7 (3 ms)
+  √ shared statements execute once after either branch (5 ms)
+  √ rejects cycles, dangling edges and malformed payloads (1 ms)
+  √ Python matches JavaScript on both branches and zero (350 ms)
+
+Test Suites: 2 passed, 2 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        5.363 s, estimated 12 s
+Ran all test suites.

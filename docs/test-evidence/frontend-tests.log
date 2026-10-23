@@ -1,0 +1,19 @@
+$ npm.cmd test --prefix frontend -- --run --reporter=verbose
+Exit code: 0
+
+
+> flowchart-frontend@1.0.0 test
+> vitest --run --reporter=verbose
+
+
+ RUN  v1.5.0 C:/Users/cluiz/OneDrive - Instituto Politecnico de Beja/Documents/2026/Demo Project Ideas — Introduction to Software Engineering/demo3-flowchart-to-code/frontend
+
+ ✓ src/services/api.test.ts > preserves actionable graph validation errors from the API
+ ✓ src/services/api.test.ts > reports server failure
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:20:28
+   Duration  1.03s (transform 183ms, setup 0ms, collect 59ms, tests 8ms, environment 0ms, prepare 478ms)
+
+The CJS build of Vite's Node API is deprecated. See https://vitejs.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.

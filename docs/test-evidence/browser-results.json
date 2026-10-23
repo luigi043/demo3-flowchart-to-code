@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ui-pseudocode",
+    "title": "Starter flowchart and matching pseudocode",
+    "command": "Automated Chromium browser smoke check",
+    "exitCode": 0
+  },
+  {
+    "id": "ui-python",
+    "title": "Python tab displays numeric input and both branches",
+    "command": "Automated Chromium browser smoke check",
+    "exitCode": 0
+  },
+  {
+    "id": "ui-javascript",
+    "title": "JavaScript tab copy and file download",
+    "command": "Automated Chromium browser smoke check",
+    "exitCode": 0
+  },
+  {
+    "id": "ui-edit",
+    "title": "Edited output label is reflected in regenerated code",
+    "command": "Automated Chromium browser smoke check",
+    "exitCode": 0
+  },
+  {
+    "id": "ui-validation",
+    "title": "Deleting Start produces an actionable validation message",
+    "command": "Automated Chromium browser smoke check",
+    "exitCode": 0
+  }
+]

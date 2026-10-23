@@ -1,0 +1,6 @@
+PASS Starter flowchart and matching pseudocode
+PASS Python tab displays numeric input and both branches
+PASS JavaScript tab copy and file download
+PASS Edited output label is reflected in regenerated code
+PASS Deleting Start produces an actionable validation message
+PASS no browser page errors

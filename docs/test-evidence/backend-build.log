@@ -1,0 +1,7 @@
+$ npm.cmd run build --prefix backend
+Exit code: 0
+
+
+> flowchart-backend@1.0.0 build
+> tsc
+
