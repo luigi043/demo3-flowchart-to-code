@@ -19,8 +19,8 @@ const NODE_PALETTE: NodeEntry[] = [
   { type: "start",    label: "Start",    color: "#22c55e", shape: "●" },
   { type: "end",      label: "End",      color: "#ef4444", shape: "●" },
   { type: "process",  label: "Process",  color: "#3b82f6", shape: "▬" },
-  { type: "input",    label: "Input",    color: "#a855f7", shape: "⬡" },
-  { type: "output",   label: "Output",   color: "#f97316", shape: "⬡" },
+  { type: "input",    label: "Input",    color: "#a855f7", shape: "▱" },
+  { type: "output",   label: "Output",   color: "#f97316", shape: "▱" },
   { type: "decision", label: "Decision", color: "#eab308", shape: "◆" },
 ];
 

@@ -20,6 +20,10 @@ import ReactFlow, {
   EdgeChange,
   applyNodeChanges,
   applyEdgeChanges,
+  Handle,
+  Position,
+  MarkerType,
+  NodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -33,6 +37,23 @@ const NODE_COLORS: Record<NodeType, string> = {
   output:   "#f97316",
   decision: "#eab308",
 };
+
+// SVG polygons keep the label upright and the connection handles outside the shape.
+function FlowNode({ data }: NodeProps) {
+  const type = data.nodeType as NodeType;
+  const fill = NODE_COLORS[type];
+  return <div style={{ width: 190, height: 86, position: "relative", color: "white" }}>
+    {type !== "start" && <Handle type="target" position={Position.Top} />}
+    <svg width="190" height="86" aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+      {type === "decision" ? <polygon points="95,1 189,43 95,85 1,43" fill={fill} />
+        : type === "input" || type === "output" ? <polygon points="20,1 189,1 170,85 1,85" fill={fill} />
+        : <rect x="1" y="1" width="188" height="84" rx={type === "start" || type === "end" ? 42 : 2} fill={fill} />}
+    </svg>
+    <div style={{ position: "relative", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 25px", textAlign: "center", color: type === "decision" ? "#111" : "white", overflowWrap: "anywhere" }}>{data.label}</div>
+    {type !== "end" && <Handle type="source" position={Position.Bottom} />}
+  </div>;
+}
+const NODE_TYPES = { flow: FlowNode };
 
 const INITIAL_NODES: Node[] = [
   {
@@ -99,7 +120,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
   onAddNode,
   onFlowchartChange,
 }) => {
-  const [nodes, setNodes] = useState<Node[]>(INITIAL_NODES);
+  const [nodes, setNodes] = useState<Node[]>(() => INITIAL_NODES.map(n => ({ ...n, type: "flow", style: undefined, data: { ...n.data, label: String(n.data.label).replace(/^(INPUT|OUTPUT) /, "") } })));
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -123,35 +144,26 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
     const label = type.charAt(0).toUpperCase() + type.slice(1);
     const newNode: Node = {
       id,
-      type: "default",
+      type: "flow",
       position: { x: 180 + Math.random() * 80, y: 180 + Math.random() * 80 },
       data: { label, nodeType: type },
-      style: {
-        background: NODE_COLORS[type],
-        color: type === "decision" ? "#000" : "#fff",
-        border: "none",
-        borderRadius: type === "start" || type === "end" ? 50 : 6,
-        ...(type === "start" || type === "end"
-          ? { width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center" }
-          : {}),
-      },
     };
     setNodes((prev) => {
       const updated = [...prev, newNode];
-      onFlowchartChange(toFlowchart(updated, edges));
       return updated;
     });
   }, [edges, onFlowchartChange, toFlowchart]);
 
   React.useEffect(() => {
     onAddNode(addNode);
-    onFlowchartChange(toFlowchart(nodes, edges));
   }, [addNode]);
+  React.useEffect(() => {
+    onFlowchartChange(toFlowchart(nodes, edges));
+  }, [nodes, edges, onFlowchartChange, toFlowchart]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => {
       const updated = applyNodeChanges(changes, nds);
-      onFlowchartChange(toFlowchart(updated, edges));
       return updated;
     });
   }, [edges, onFlowchartChange, toFlowchart]);
@@ -159,15 +171,20 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     setEdges((eds) => {
       const updated = applyEdgeChanges(changes, eds);
-      onFlowchartChange(toFlowchart(nodes, updated));
       return updated;
     });
   }, [nodes, onFlowchartChange, toFlowchart]);
 
   const onConnect = useCallback((params: Connection) => {
+    let label: string | undefined;
+    if (nodes.find(n => n.id === params.source)?.data.nodeType === "decision") {
+      const answer = window.prompt("Decision branch: yes or no", "yes");
+      if (answer === null) return;
+      label = answer.trim().toLowerCase();
+      if (label !== "yes" && label !== "no") return;
+    }
     setEdges((eds) => {
-      const updated = addEdge({ ...params, animated: true }, eds);
-      onFlowchartChange(toFlowchart(nodes, updated));
+      const updated = addEdge({ ...params, label, animated: true }, eds);
       return updated;
     });
   }, [nodes, onFlowchartChange, toFlowchart]);
@@ -179,18 +196,14 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
       const updated = nds.map((n) =>
         n.id === node.id ? { ...n, data: { ...n.data, label: newLabel } } : n
       );
-      onFlowchartChange(toFlowchart(updated, edges));
       return updated;
     });
   }, [edges, onFlowchartChange, toFlowchart]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
-      setNodes((nds) => {
-        const updated = nds.filter((n) => n.id !== selectedId);
-        onFlowchartChange(toFlowchart(updated, edges));
-        return updated;
-      });
+      setNodes(nds => nds.filter(n => n.id !== selectedId));
+      setEdges(eds => eds.filter(edge => edge.source !== selectedId && edge.target !== selectedId));
       setSelectedId(null);
     }
   }, [selectedId, edges, onFlowchartChange, toFlowchart]);
@@ -199,11 +212,17 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
     <div style={{ flex: 1, height: "100%" }} onKeyDown={onKeyDown} tabIndex={0}>
       <ReactFlow
         nodes={nodes}
+        nodeTypes={NODE_TYPES}
+        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeDoubleClick={onNodeDoubleClick}
+        onEdgeDoubleClick={(_, edge) => {
+          const label = window.prompt("Edge label (yes/no for a decision):", String(edge.label ?? ""));
+          if (label !== null) setEdges(eds => eds.map(e => e.id === edge.id ? { ...e, label: label.trim().toLowerCase() } : e));
+        }}
         onNodeClick={(_, node) => setSelectedId(node.id)}
         fitView
       >

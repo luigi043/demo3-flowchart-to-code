@@ -5,7 +5,7 @@
  *
  * Conventions
  * ───────────
- *   • INPUT nodes  → const variable = prompt("...")
+ *   • INPUT nodes  → let variable = Number(prompt("..."))
  *   • OUTPUT nodes → console.log(...)
  *   • PROCESS nodes → emitted verbatim
  *   • IF/ELSE      → if (...) { ... } else { ... }
@@ -36,7 +36,7 @@ export function generateJavaScript(ir: IR): string {
 
       case "INPUT": {
         const [prompt, varName] = parseInput(stmt.value ?? "");
-        lines.push(`${pad}const ${varName} = prompt("${prompt}");`);
+        lines.push(`${pad}let ${varName} = Number(prompt(${JSON.stringify(prompt)}));`);
         break;
       }
 

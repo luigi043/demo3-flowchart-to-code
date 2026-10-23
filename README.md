@@ -2,6 +2,12 @@
 
 A full-stack educational tool that converts visual flowcharts into
 **Pseudocode**, **Python**, and **JavaScript** simultaneously.
+
+Start with the [classroom lesson and language comparison](docs/LESSON.md).
+Runnable Python, browser JavaScript, and matching pseudocode are in `examples/`.
+The [Word test evidence report](docs/Test%20Evidence.docx) includes screenshots
+of actual verbose test results and build output. Original images and transcripts
+are preserved in `docs/test-evidence/`.
 ![alt text](docs/image.png)
 ---
 
@@ -119,8 +125,8 @@ Open **http://localhost:5173** in your browser.
   "success": true,
   "result": {
     "pseudocode": "BEGIN\n    INPUT number\n...",
-    "python": "number = input(\"Enter number: \")\n...",
-    "javascript": "const number = prompt(\"Enter number: \");\n..."
+    "python": "number = float(input(\"Enter number: \"))\n...",
+    "javascript": "let number = Number(prompt(\"Enter number: \"));\n..."
   }
 }
 ```
@@ -162,6 +168,10 @@ React Flow Editor  ────────────────────�
 cd backend
 npm test
 ```
+
+Run `npm run build` in both `backend` and `frontend` for production checks.
+Backend tests execute generated JavaScript and check invalid graphs and branch
+merges. Set `PYTHON` to a Python 3 executable to also execute generated Python.
 
 ---
 

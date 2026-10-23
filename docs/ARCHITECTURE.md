@@ -43,6 +43,9 @@ This design means:
 | Incoming edges | Every non-START node must have ≥ 1 incoming edge |
 | Decision branches | Decision nodes must have exactly 2 edges: `yes` and `no` |
 | Reachability | BFS from START must reach every node |
+| Valid graph | Unique IDs, known node types and edge endpoints, no cycles |
+| Sequence | Non-decision nodes have one outgoing edge; END has none |
+| Labels | Nonempty executable labels; input identifies a variable |
 
 ## Decision node handling
 
@@ -55,10 +58,10 @@ Decision node
                                          continues
 ```
 
-The IRBuilder uses a naive merge-point finder (first node reachable from
-both branches that has not yet been visited).  This works correctly for
-simple single-level if/else.  Nested decisions require a more sophisticated
-post-dominator analysis (planned for v2).
+The IRBuilder finds the common merge point before traversing either branch.
+Each branch stops at that point; the shared continuation is emitted once after
+END_IF. The classroom examples use structured branches that rejoin. Arbitrary
+crossing branches require post-dominator analysis and are outside this demo.
 
 ## Adding a language generator
 

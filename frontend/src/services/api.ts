@@ -15,7 +15,7 @@ export async function convertFlowchart(
     body: JSON.stringify({ flowchart }),
   });
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 422 && response.status !== 400) {
     throw new Error(`HTTP error ${response.status}`);
   }
 

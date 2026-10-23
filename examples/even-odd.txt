@@ -1,0 +1,8 @@
+BEGIN
+INPUT number
+IF number % 2 == 0 THEN
+    OUTPUT "Even"
+ELSE
+    OUTPUT "Odd"
+END IF
+END

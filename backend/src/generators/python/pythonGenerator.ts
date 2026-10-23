@@ -5,7 +5,7 @@
  *
  * Conventions
  * ───────────
- *   • INPUT nodes  → variable = input("...")
+ *   • INPUT nodes  → variable = float(input("..."))
  *   • OUTPUT nodes → print(...)
  *   • PROCESS nodes → emitted verbatim (user writes valid Python)
  *   • IF/ELSE      → if .../else:
@@ -18,7 +18,7 @@ const INDENT = "    "; // PEP 8: 4 spaces
 export function generatePython(ir: IR): string {
   const lines: string[] = [];
 
-  for (const stmt of ir) {
+  for (const [index, stmt] of ir.entries()) {
     const pad = INDENT.repeat(stmt.depth);
 
     switch (stmt.type) {
@@ -37,7 +37,7 @@ export function generatePython(ir: IR): string {
       case "INPUT": {
         // Expect label like: "number" or "Enter a number: -> number"
         const [prompt, varName] = parseInput(stmt.value ?? "");
-        lines.push(`${pad}${varName} = input("${prompt}")`);
+        lines.push(`${pad}${varName} = float(input(${JSON.stringify(prompt)}))`);
         break;
       }
 
@@ -47,10 +47,12 @@ export function generatePython(ir: IR): string {
 
       case "IF":
         lines.push(`${pad}if ${stmt.value ?? ""}:`);
+        if (!ir[index + 1] || ir[index + 1].depth <= stmt.depth) lines.push(`${pad}${INDENT}pass`);
         break;
 
       case "ELSE":
         lines.push(`${pad}else:`);
+        if (!ir[index + 1] || ir[index + 1].depth <= stmt.depth) lines.push(`${pad}${INDENT}pass`);
         break;
 
       case "END_IF":
